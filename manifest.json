@@ -1,0 +1,24 @@
+{
+  "id": "triposg",
+  "name": "TripoSG",
+  "source": "https://github.com/lightningpixel/modly-triposg-extension",
+  "description": "High-quality image-to-3D via flow matching diffusion. Sharper geometry and finer details than TripoSR. Requires ~8GB VRAM.",
+  "version": "1.0.0",
+  "author": "Lightning Pixel",
+  "generator_class": "TripoSGGenerator",
+  "tags": [
+    "image-to-3d",
+    "high-quality",
+    "diffusion"
+  ],
+  "models": [
+    {
+      "id": "triposg",
+      "name": "TripoSG",
+      "hf_repo": "VAST-AI/TripoSG",
+      "download_check": "model_index.json",
+      "description": "Flow matching diffusion model for high-quality single-image 3D reconstruction (~8GB)"
+    }
+  ],
+  "signature": "9rZDM1yHTawLw/EXwblpelmM4WOIDeqZzgYPGLUEnt3Fp/aK/PVeOf8j4bwHGQ2LYbMygFavJ3I1Iwp0gLyTAQ=="
+}
