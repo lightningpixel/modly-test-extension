@@ -87,7 +87,7 @@ class TripoSGGenerator(BaseGenerator):
         seed            = int(params.get("seed", 42))
         faces           = int(params.get("faces", -1))
         fg_ratio        = float(params.get("foreground_ratio", 0.85))
-        use_flash       = bool(params.get("use_flash_decoder", True))
+        use_flash       = params.get("use_flash_decoder", "DiffDMC") == "DiffDMC"
 
         # Preprocessing
         self._report(progress_cb, 5, "Removing background...")
@@ -278,9 +278,10 @@ class TripoSGGenerator(BaseGenerator):
             },
             {
                 "id":      "use_flash_decoder",
-                "label":   "Flash Decoder",
-                "type":    "bool",
-                "default": True,
-                "tooltip": "DiffDMC (activé) est plus rapide et produit un mesh watertight. Désactiver pour utiliser Marching Cubes, qui gère mieux les géométries complexes avec des trous ou des creux profonds.",
+                "label":   "Decoder",
+                "type":    "select",
+                "options": ["DiffDMC", "Marching Cubes"],
+                "default": "DiffDMC",
+                "tooltip": "DiffDMC est plus rapide et produit un mesh watertight. Marching Cubes gère mieux les géométries complexes avec des trous ou des creux profonds.",
             },
         ]
