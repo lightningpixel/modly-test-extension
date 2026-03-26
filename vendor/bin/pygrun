@@ -1,4 +1,4 @@
-#!D:\ModlyModels\dependencies\venv\Scripts\python.exe
+#!D:\Modly\resources\python-embed\python.exe
 __author__ = 'jszheng'
 import optparse
 import sys
