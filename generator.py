@@ -182,8 +182,13 @@ class TripoSGGenerator(BaseGenerator):
         import rembg
 
         image   = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
-        session = rembg.new_session()
-        image   = rembg.remove(image, session=session)
+        try:
+            session = rembg.new_session()
+            image   = rembg.remove(image, session=session)
+        except Exception:
+            # cuDNN/CUDA incompatibility — fall back to CPU
+            session = rembg.new_session(providers=["CPUExecutionProvider"])
+            image   = rembg.remove(image, session=session)
 
         # Composite on white background
         bg = Image.new("RGBA", image.size, (255, 255, 255, 255))
