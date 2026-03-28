@@ -79,5 +79,5 @@
       ],
       "tooltip": "DiffDMC is faster and produces a watertight mesh. Marching Cubes handles complex geometries better."
     }
-  ],
+  ]
 }
