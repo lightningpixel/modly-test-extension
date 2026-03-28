@@ -71,6 +71,13 @@ jobs:
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
+      # Git ships its own link.exe (Unix symlink util) which shadows MSVC's linker.
+      # Remove it so the correct MSVC link.exe is used when building CUDA extensions.
+      - name: Remove Git link.exe (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: rm "/c/Program Files/Git/usr/bin/link.exe"
+
       - name: Install PyTorch
         shell: bash
         run: pip install torch==${{ matrix.torch }} torchvision==${{ matrix.torchvision }} --index-url ${{ matrix.torch_index }}
