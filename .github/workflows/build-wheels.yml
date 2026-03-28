@@ -27,7 +27,9 @@ jobs:
             arch_list: "7.0;7.5;8.0;8.6;9.0"
 
           # Windows — CUDA 11.8 (Pascal, SM 6.x)
-          - os: windows-latest
+          # Must use windows-2019 (VS 2019 / MSVC 14.2x): MSVC 14.44+ (VS2022 17.14)
+          # requires CUDA 12.4+ per STL1002 check in yvals_core.h.
+          - os: windows-2019
             torch: "2.5.1"
             torchvision: "0.20.1"
             cuda: "118"
