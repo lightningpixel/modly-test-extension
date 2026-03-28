@@ -189,6 +189,9 @@ def setup(python_exe: str, ext_dir: Path, gpu_sm: int) -> None:
         "typeguard",
         "peft",
         "einops",
+        "diffusers>=0.31.0",
+        "transformers>=4.46.0",
+        "accelerate",
     )
 
     # ------------------------------------------------------------------ #
