@@ -14,6 +14,7 @@ To rebuild vendor/ (pure-Python part only):
     python build_vendor.py   (run once with the app's venv active)
 """
 import io
+import sys
 import time
 import threading
 import uuid
@@ -154,12 +155,19 @@ class TripoSGGenerator(BaseGenerator):
         # cannot find it even if the path is correct.
         import torch  # noqa: F401
 
+        # Add vendor/ to sys.path so triposg and its pure-Python deps are importable.
+        # vendor/ is built once by running build_vendor.py with the app's Python.
+        vendor_dir = _EXTENSION_DIR / "vendor"
+        if vendor_dir.exists() and str(vendor_dir) not in sys.path:
+            sys.path.insert(0, str(vendor_dir))
+
         try:
             from triposg.pipelines.pipeline_triposg import TripoSGPipeline  # noqa: F401
         except ImportError as exc:
             raise RuntimeError(
                 "[TripoSGGenerator] triposg not found. "
-                "Run the extension setup from the Models page."
+                "Run build_vendor.py with the app's Python to build vendor/, "
+                "or click Repair on the Models page to run setup.py."
             ) from exc
 
     # ------------------------------------------------------------------ #
