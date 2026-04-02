@@ -24,6 +24,7 @@ jobs:
             cuda: "124"
             torch_index: "https://download.pytorch.org/whl/cu124"
             cuda_toolkit: "12.4.1"
+            cuda_apt: ""
             arch_list: "7.0;7.5;8.0;8.6;9.0"
 
           # Windows — CUDA 12.8 (Blackwell, SM ≥ 100)
@@ -32,7 +33,8 @@ jobs:
             torchvision: "0.21.0"
             cuda: "128"
             torch_index: "https://download.pytorch.org/whl/cu128"
-            cuda_toolkit: "12.8.1"
+            cuda_toolkit: ""
+            cuda_apt: ""
             arch_list: "7.0;7.5;8.0;8.6;9.0;10.0;12.0"
 
           # Linux — CUDA 12.4
@@ -42,6 +44,7 @@ jobs:
             cuda: "124"
             torch_index: "https://download.pytorch.org/whl/cu124"
             cuda_toolkit: "12.4.1"
+            cuda_apt: ""
             arch_list: "7.0;7.5;8.0;8.6;9.0"
 
           # Linux — CUDA 12.8 (Blackwell, SM ≥ 100)
@@ -50,7 +53,8 @@ jobs:
             torchvision: "0.21.0"
             cuda: "128"
             torch_index: "https://download.pytorch.org/whl/cu128"
-            cuda_toolkit: "12.8.1"
+            cuda_toolkit: ""
+            cuda_apt: "12-8"
             arch_list: "7.0;7.5;8.0;8.6;9.0;10.0;12.0"
 
           # Linux — CUDA 11.8
@@ -60,6 +64,7 @@ jobs:
             cuda: "118"
             torch_index: "https://download.pytorch.org/whl/cu118"
             cuda_toolkit: "11.8.0"
+            cuda_apt: ""
             arch_list: "6.1;7.0;7.5;8.0;8.6"
 
     steps:
@@ -69,23 +74,49 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install CUDA Toolkit
+      # ── CUDA install: Jimver for known versions, manual for cu128 ─────────────
+
+      - name: Install CUDA Toolkit (Jimver)
+        if: matrix.cuda_toolkit != ''
         uses: Jimver/cuda-toolkit@v0.2.21
         with:
           cuda: ${{ matrix.cuda_toolkit }}
           method: network
 
-      # Activate MSVC so cl.exe is in PATH — required for CUDA extension builds on Windows
+      - name: Install CUDA 12.8 (Linux — apt)
+        if: matrix.cuda_apt != '' && runner.os == 'Linux'
+        shell: bash
+        run: |
+          wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+          sudo dpkg -i cuda-keyring_1.1-1_all.deb
+          sudo apt-get update -q
+          sudo apt-get install -y cuda-nvcc-${{ matrix.cuda_apt }} cuda-cudart-dev-${{ matrix.cuda_apt }}
+          echo "/usr/local/cuda-12.8/bin" >> $GITHUB_PATH
+          echo "CUDA_HOME=/usr/local/cuda-12.8" >> $GITHUB_ENV
+
+      - name: Install CUDA 12.8 (Windows — network installer)
+        if: matrix.cuda == '128' && runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $url = "https://developer.download.nvidia.com/compute/cuda/12.8.1/network_installers/cuda_12.8.1_windows_network.exe"
+          Invoke-WebRequest -Uri $url -OutFile cuda_net.exe
+          Start-Process -Wait -FilePath cuda_net.exe -ArgumentList "-s nvcc_12.8 cudart_12.8 visual_studio_integration_12.8"
+          $cudaPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8\bin"
+          echo $cudaPath | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "CUDA_HOME=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.8" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      # ── MSVC (Windows only) ───────────────────────────────────────────────────
+
       - name: Activate MSVC (Windows only)
         if: runner.os == 'Windows'
         uses: ilammy/msvc-dev-cmd@v1
 
-      # Git ships its own link.exe (Unix symlink util) which shadows MSVC's linker.
-      # Remove it so the correct MSVC link.exe is used when building CUDA extensions.
       - name: Remove Git link.exe (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: rm "/c/Program Files/Git/usr/bin/link.exe"
+
+      # ── Build ─────────────────────────────────────────────────────────────────
 
       - name: Install PyTorch
         shell: bash
@@ -112,9 +143,6 @@ jobs:
         shell: bash
         run: git clone --depth=1 https://github.com/SarahWeiii/diso.git diso-src
 
-      # Inject -allow-unsupported-compiler into nvcc extra_compile_args so that
-      # CUDA 11.8/12.x can build against VS 2022 17.14+ (too new for nvcc's check).
-      # CUDAFLAGS is not forwarded to nvcc on Windows — the flag must be in setup.py.
       - name: Patch diso setup.py (Windows)
         if: steps.pypi.outputs.found != 'true' && runner.os == 'Windows'
         shell: python
@@ -155,9 +183,6 @@ jobs:
           if not wheels:
               sys.exit("No diso wheel found in wheel-out/")
           src = wheels[0]
-          # Standard wheel format: {name}-{version}-{pytag}-{abitag}-{platformtag}.whl
-          # We discard version and platform tag and rebuild a canonical name so that
-          # setup.py can construct the exact same string without knowing diso's version.
           parts = os.path.basename(src)[:-4].split("-")
           py_tag  = parts[2] if len(parts) >= 5 else "cp311"
           abi_tag = parts[3] if len(parts) >= 5 else "cp311"
